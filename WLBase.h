@@ -1,10 +1,11 @@
 /*
  * WLink基础定义
  * (C)2022 WuChang & RM Team WDR.All Rights Reserved.
-*/
+ */
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <memory.h>
 
 typedef uint32_t WL_SIZE_T;
 
