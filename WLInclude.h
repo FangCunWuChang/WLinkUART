@@ -6,6 +6,5 @@
 #include <stm32f407xx.h>
 #include <stm32f4xx_hal.h>
 #include <stm32f4xx_hal_uart.h>
-#include <stm32f4xx_hal_usart.h>
-#include <cmsis_os2.h>
+#include <FreeRTOS.h>
 #include <timers.h>

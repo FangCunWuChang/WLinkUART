@@ -7,8 +7,6 @@
 #include <stdbool.h>
 #include <memory.h>
 
-typedef uint32_t WL_SIZE_T;
-
 typedef uint8_t WL_UINT8;
 typedef uint16_t WL_UINT16;
 typedef uint32_t WL_UINT32;
@@ -28,3 +26,4 @@ typedef bool WL_BOOLEAN;
 #define WL_NULL NULL
 
 typedef WL_UINT32 WL_TIMETICK;
+typedef WL_UINT32 WL_SIZE_T;

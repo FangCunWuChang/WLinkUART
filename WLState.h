@@ -8,28 +8,26 @@
 
 typedef enum
 {
-    WL_UART_StateUART = 0,
-    WL_UART_StateUSART = 1
-} WL_UART_StateType;
-
-typedef enum
-{
-    WL_UART_SendStateNormal = 0,
-    WL_UART_SendStateBusy = 1
+    WL_UART_SendStateEmpty = 0,
+    WL_UART_SendStateConnected0 = 1,
+    WL_UART_SendStateConnected1 = 2,
+    WL_UART_SendStateBusy = 4
 } WL_UART_SendState;
 
-typedef union
-{
-    UART_HandleTypeDef *uartHandle;   // HAL UART串口句柄
-    USART_HandleTypeDef *usartHandle; // HAL USART串口句柄
-} WL_UART_Handle;
+typedef void (*WL_UART_HookFunction)(WL_UART_State *);
 
 typedef struct
 {
-    WL_UINT64 id;                //索引
-    WL_UART_StateType type;      //串口模式UART/UASRT
-    WL_UART_Handle handle;       //串口句柄
-    WL_TIMETICK timeout;         //发送超时
-    WL_UART_SendState sendState; //发送状态
-    TimerHandle_t *timer;        //定时器句柄
-} WL_UART_State;                 // WLink状态
+    WL_UINT32 id;                         //索引
+    UART_HandleTypeDef *handle;           //串口句柄
+    WL_TIMETICK timeout;                  //传输超时
+    WL_UART_SendState sendState;          //发送状态
+    WL_BOOLEAN isReading;                 //正在接收
+    xTimerHandle *timer;                  //传输定时器
+    WL_UART_HookFunction readFunc;        //串口输入回调
+    WL_UART_HookFunction readErrorFunc;   //串口输入错误回调
+    WL_UART_HookFunction writeErrorFunc;  //串口输出错误回调
+    WL_UART_HookFunction writeFinishFunc; //串口队列输出结束回调
+    WL_UINT32 peerID;                     //远程id
+
+} WL_UART_State; // WLink状态
