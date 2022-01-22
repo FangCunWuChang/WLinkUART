@@ -78,18 +78,20 @@ void _WL_UART_ReadCallback(UART_HandleTypeDef *huart)
                 if ((*current)->sendState != WL_UART_SendStateBusy && (*current)->sendState != WL_UART_SendStateConnected0 && (*current)->sendState != WL_UART_SendStateConnected1)
                 {
                     (*current)->sendState = WL_UART_SendStateEmpty;
-                    (*current)->peerID = *((WL_UINT32 *)((WL_SIZE_T)(*buffer) + 8)); //远程接口匹配
-                    void *writeBuff = *((void **)WL_Map_Find(WL_WriteBuffers, &(huart->Instance)));
-                    memcpy(writeBuff, (*buffer), WL_UART_BufferSize);
-                    memcpy((void *)((WL_SIZE_T)writeBuff + 8), (void *)((WL_SIZE_T)(*buffer) + 12), 4); // peerID->id
-                    memcpy((void *)((WL_SIZE_T)writeBuff + 12), (void *)((WL_SIZE_T)(*buffer) + 8), 4); // id->peerID
-                    *((WL_UINT32 *)((WL_SIZE_T)writeBuff + 4)) = WL_UART_Head2;                         //握手返回操作头
-                    if (HAL_UART_Transmit_IT(huart, writeBuff, WL_UART_BufferSize) != HAL_OK)
+                    if((*current)->peerID == *((WL_UINT32 *)((WL_SIZE_T)(*buffer) + 8)))
                     {
-                        break;
-                    } //发送
-                    (*current)->sendState = WL_UART_SendStateConnected1;
-                    xTimerStartFromISR((*current)->timer, 0);
+                        void *writeBuff = *((void **)WL_Map_Find(WL_WriteBuffers, &(huart->Instance)));
+                        memcpy(writeBuff, (*buffer), WL_UART_BufferSize);
+                        memcpy((void *)((WL_SIZE_T)writeBuff + 8), (void *)((WL_SIZE_T)(*buffer) + 12), 4); // peerID->id
+                        memcpy((void *)((WL_SIZE_T)writeBuff + 12), (void *)((WL_SIZE_T)(*buffer) + 8), 4); // id->peerID
+                        *((WL_UINT32 *)((WL_SIZE_T)writeBuff + 4)) = WL_UART_Head2;                         //握手返回操作头
+                        if (HAL_UART_Transmit_IT(huart, writeBuff, WL_UART_BufferSize) != HAL_OK)
+                        {
+                            break;
+                        } //发送
+                        (*current)->sendState = WL_UART_SendStateConnected1;
+                        xTimerStartFromISR((*current)->timer, 0);
+                    } //远程接口匹配
                 } //判断接口状态合适
                 break;
             }
