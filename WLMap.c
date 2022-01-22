@@ -46,7 +46,7 @@ void WL_Map_Insert(WL_Map *map, void *key, void *value)
 
     for (WL_UINT32 i = 0; i < map->size; i++)
     {
-        if (memcmp(key, map->keys + (map->keySize) * i, map->keySize) == 0)
+        if (memcmp(key, (void *)((WL_SIZE_T)(map->keys) + (map->keySize) * i), map->keySize) == 0)
         {
             return;
         }
@@ -65,8 +65,8 @@ void WL_Map_Insert(WL_Map *map, void *key, void *value)
         map->values = WL_NULL;
     } //如果原来有数据，则复制原来数据并释放原空间
 
-    memcpy(newKeys + (map->keySize) * (map->size), key, map->keySize);
-    memcpy(newValues + (map->valueSize) * (map->size), value, map->valueSize); //数据写入新空间
+    memcpy((void *)((WL_SIZE_T)newKeys + (map->keySize) * (map->size)), key, map->keySize);
+    memcpy((void *)((WL_SIZE_T)newValues + (map->valueSize) * (map->size)), value, map->valueSize); //数据写入新空间
 
     map->keys = newKeys;
     map->values = newValues;
@@ -86,9 +86,9 @@ void *WL_Map_Find(WL_Map *map, void *key)
 
     for (WL_UINT32 i = 0; i < map->size; i++)
     {
-        if (memcmp(key, map->keys + (map->keySize) * i, map->keySize) == 0)
+        if (memcmp(key, (void *)((WL_SIZE_T)(map->keys) + (map->keySize) * i), map->keySize) == 0)
         {
-            return map->values + (map->valueSize) * i;
+            return (void *)((WL_SIZE_T)(map->values) + (map->valueSize) * i);
         }
     }
     return WL_NULL;
@@ -108,7 +108,7 @@ void WL_Map_Erase(WL_Map *map, void *key)
     WL_UINT32 index = map->size;
     for (WL_UINT32 i = 0; i < map->size; i++)
     {
-        if (memcmp(key, map->keys + (map->keySize) * i, map->keySize) == 0)
+        if (memcmp(key, (void *)((WL_SIZE_T)(map->keys) + (map->keySize) * i), map->keySize) == 0)
         {
             index = i;
             break;
@@ -132,8 +132,8 @@ void WL_Map_Erase(WL_Map *map, void *key)
         }
         if (index < map->size - 1)
         {
-            memcpy(newKeys + (map->keySize) * index, map->keys + (map->keySize) * (index + 1), (map->keySize) * (map->size - index - 1));
-            memcpy(newValues + (map->valueSize) * index, map->values + (map->valueSize) * (index + 1), (map->valueSize) * (map->size - index - 1));
+            memcpy((void *)((WL_SIZE_T)newKeys + (map->keySize) * index), (void *)((WL_SIZE_T)(map->keys) + (map->keySize) * (index + 1)), (map->keySize) * (map->size - index - 1));
+            memcpy((void *)((WL_SIZE_T)newValues + (map->valueSize) * index), (void *)((WL_SIZE_T)(map->values) + (map->valueSize) * (index + 1)), (map->valueSize) * (map->size - index - 1));
         }
     } //如果删除后不为空，则分配新空间并复制内容
 

@@ -13,7 +13,8 @@
 #define WL_UART_Head1 0x11111111
 #define WL_UART_Head2 0x22222222
 #define WL_UART_Head3 0x33333333
-#define WL_UART_Head4 0x44444444 //操作头
+#define WL_UART_Head4 0x44444444
+#define WL_UART_Head5 0x55555555 //操作头
 
 WL_UART_State *WL_UART_Create(UART_HandleTypeDef *, WL_UINT32, WL_UINT32, WL_UART_HookFunction, WL_UART_HookFunction);
 
