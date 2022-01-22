@@ -158,9 +158,15 @@ WL_UART_State *WL_UART_Create(UART_HandleTypeDef *uHandleType, WL_UINT32 id, WL_
 
     WL_UART_State *state = pvPortMalloc(sizeof(WL_UART_State)); //分配内存
     state->handle = uHandleType;
+    state->sendState = WL_UART_SendStateEmpty;
     state->timeout = WL_UART_DEFAULTTIMEOUT;
+    state->id = id;
+    state->peerID = peerID;
+    state->timer = WL_NULL;
     state->readFunc = readFunc;
     state->readErrorFunc = readErrorFunc;
+    state->writeFinishFunc = WL_NULL;
+    state->writeErrorFunc = WL_NULL;
 
     if (WL_Map_Find(WL_ReadBuffers, &(state->handle->Instance)) == WL_NULL)
     {
@@ -211,16 +217,16 @@ void WL_UART_Destory(WL_UART_State *state)
     } //判断是否有串口占用
     if (!haveRead)
     {
-        pvPortFree(*((void **)WL_Map_Find(WL_ReadBuffers, &readPort)));
+        vPortFree(*((void **)WL_Map_Find(WL_ReadBuffers, &readPort)));
         WL_Map_Erase(WL_ReadBuffers, &readPort);
     }
     if (!haveWrite)
     {
-        pvPortFree(*((void **)WL_Map_Find(WL_WriteBuffers, &writePort)));
+        vPortFree(*((void **)WL_Map_Find(WL_WriteBuffers, &writePort)));
         WL_Map_Erase(WL_WriteBuffers, &writePort);
     } //若无占用清理串口缓存
 
-    pvPortFree(state);
+    vPortFree(state);
 
     if (WL_Map_Size(WL_StateList) == 0)
     {

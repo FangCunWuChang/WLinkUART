@@ -25,12 +25,12 @@ void WL_Map_Destory(WL_Map *map)
     }
     if (map->size > 0)
     {
-        pvPortFree(map->keys);
-        pvPortFree(map->values);
+        vPortFree(map->keys);
+        vPortFree(map->values);
         map->keys = WL_NULL;
         map->values = WL_NULL;
     }
-    pvPortFree(map);
+    vPortFree(map);
 }
 
 void WL_Map_Insert(WL_Map *map, void *key, void *value)
@@ -59,8 +59,8 @@ void WL_Map_Insert(WL_Map *map, void *key, void *value)
     {
         memcpy(newKeys, map->keys, (map->keySize) * (map->size));
         memcpy(newValues, map->values, (map->valueSize) * (map->size));
-        pvPortFree(map->keys);
-        pvPortFree(map->values);
+        vPortFree(map->keys);
+        vPortFree(map->values);
         map->keys = WL_NULL;
         map->values = WL_NULL;
     } //如果原来有数据，则复制原来数据并释放原空间
@@ -137,8 +137,8 @@ void WL_Map_Erase(WL_Map *map, void *key)
         }
     } //如果删除后不为空，则分配新空间并复制内容
 
-    pvPortFree(map->keys);
-    pvPortFree(map->values); //清理原空间
+    vPortFree(map->keys);
+    vPortFree(map->values); //清理原空间
 
     map->keys = newKeys;
     map->values = newValues;

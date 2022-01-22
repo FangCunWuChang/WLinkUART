@@ -14,7 +14,7 @@ typedef enum
     WL_UART_SendStateBusy = 4
 } WL_UART_SendState;
 
-typedef void (*WL_UART_HookFunction)(WL_UART_State *);
+typedef void (*WL_UART_HookFunction)(void *);
 
 typedef struct
 {
