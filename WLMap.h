@@ -1,3 +1,4 @@
+#pragma once
 /*
  * WLink键值映射表
  * (C)2022 WuChang & RM Team WDR.All Rights Reserved.

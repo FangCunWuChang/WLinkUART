@@ -1,3 +1,4 @@
+#pragma once
 /*
  * WLink基础定义
  * (C)2022 WuChang & RM Team WDR.All Rights Reserved.

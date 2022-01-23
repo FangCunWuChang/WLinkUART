@@ -77,11 +77,11 @@ void *WL_Map_Find(WL_Map *map, void *key)
 {
     if (map == WL_NULL)
     {
-        return;
+        return WL_NULL;
     }
     if (key == WL_NULL)
     {
-        return;
+        return WL_NULL;
     }
 
     for (WL_UINT32 i = 0; i < map->size; i++)

@@ -5,6 +5,7 @@
 
 #include "WLLib.h"
 #include "WLMap.h"
+#include "WLLLPL.h"
 
 #define WL_UART_DEFAULTTIMEOUT 1000 //默认发送超时
 
@@ -48,13 +49,13 @@ static void __WL_UART_Timeout(xTimerHandle pxTimer)
     }
 }
 
-void _WL_UART_ReadCallback(UART_HandleTypeDef *huart)
+static void _WL_UART_ReadCallback(WL_UART_LLP *llp)
 {
     if (WL_ReadBuffers == WL_NULL)
     {
         return;
     }
-    void **buffer = WL_Map_Find(WL_ReadBuffers, &(huart->Instance));
+    void **buffer = WL_Map_Find(WL_ReadBuffers, &(llp->handle->Instance));
     if (buffer == WL_NULL)
     {
         return;
@@ -62,7 +63,7 @@ void _WL_UART_ReadCallback(UART_HandleTypeDef *huart)
 
     if (*((WL_UINT32 *)(*buffer)) != WL_UART_MagicNumber || *((WL_UINT32 *)((WL_SIZE_T)(*buffer) + WL_UART_BufferSize - 4)) != WL_UART_MagicNumber)
     {
-        HAL_UART_Receive_IT(huart, *((void **)WL_Map_Find(WL_ReadBuffers, &(huart->Instance))), WL_UART_BufferSize);
+        WL_UART_LLPRead(llp, *((void **)WL_Map_Find(WL_ReadBuffers, &(llp->handle->Instance))), WL_UART_BufferSize, _WL_UART_ReadCallback);
         return;
     } //头尾校验
     switch (*((WL_UINT32 *)((WL_SIZE_T)(*buffer) + 4)))
@@ -77,22 +78,22 @@ void _WL_UART_ReadCallback(UART_HandleTypeDef *huart)
             {
                 if ((*current)->sendState != WL_UART_SendStateBusy && (*current)->sendState != WL_UART_SendStateConnected0 && (*current)->sendState != WL_UART_SendStateConnected1)
                 {
-                    (*current)->sendState = WL_UART_SendStateEmpty;
-                    if((*current)->peerID == *((WL_UINT32 *)((WL_SIZE_T)(*buffer) + 8)))
+                    if ((*current)->peerID == *((WL_UINT32 *)((WL_SIZE_T)(*buffer) + 8)))
                     {
-                        void *writeBuff = *((void **)WL_Map_Find(WL_WriteBuffers, &(huart->Instance)));
+                        void *writeBuff = *((void **)WL_Map_Find(WL_WriteBuffers, &(llp->handle->Instance)));
                         memcpy(writeBuff, (*buffer), WL_UART_BufferSize);
                         memcpy((void *)((WL_SIZE_T)writeBuff + 8), (void *)((WL_SIZE_T)(*buffer) + 12), 4); // peerID->id
                         memcpy((void *)((WL_SIZE_T)writeBuff + 12), (void *)((WL_SIZE_T)(*buffer) + 8), 4); // id->peerID
                         *((WL_UINT32 *)((WL_SIZE_T)writeBuff + 4)) = WL_UART_Head2;                         //握手返回操作头
-                        if (HAL_UART_Transmit_IT(huart, writeBuff, WL_UART_BufferSize) != HAL_OK)
-                        {
-                            break;
-                        } //发送
+                        WL_UART_LLPWrite(llp, writeBuff, WL_UART_BufferSize);                               //发送
                         (*current)->sendState = WL_UART_SendStateConnected1;
                         xTimerStartFromISR((*current)->timer, 0);
                     } //远程接口匹配
-                } //判断接口状态合适
+                    else
+                    {
+                        (*current)->sendState = WL_UART_SendStateEmpty;
+                    } //远程接口不匹配
+                }     //判断接口状态合适
                 break;
             }
         } //查找对应接口
@@ -111,15 +112,12 @@ void _WL_UART_ReadCallback(UART_HandleTypeDef *huart)
                     xTimerStopFromISR((*current)->timer, 0);
                     if ((*current)->peerID == *((WL_UINT32 *)((WL_SIZE_T)(*buffer) + 8)))
                     {
-                        void *writeBuff = *((void **)WL_Map_Find(WL_WriteBuffers, &(huart->Instance)));
+                        void *writeBuff = *((void **)WL_Map_Find(WL_WriteBuffers, &(llp->handle->Instance)));
                         memcpy(writeBuff, (*buffer), WL_UART_BufferSize);
                         memcpy((void *)((WL_SIZE_T)writeBuff + 8), (void *)((WL_SIZE_T)(*buffer) + 12), 4); // peerID->id
                         memcpy((void *)((WL_SIZE_T)writeBuff + 12), (void *)((WL_SIZE_T)(*buffer) + 8), 4); // id->peerID
                         *((WL_UINT32 *)((WL_SIZE_T)writeBuff + 4)) = WL_UART_Head3;                         //握手返回操作头
-                        if (HAL_UART_Transmit_IT(huart, writeBuff, WL_UART_BufferSize) != HAL_OK)
-                        {
-                            break;
-                        } //发送
+                        WL_UART_LLPWrite(llp, writeBuff, WL_UART_BufferSize);                               //发送
                         (*current)->sendState = WL_UART_SendStateConnected2;
                     } //远程接口匹配
                     else
@@ -166,7 +164,7 @@ void _WL_UART_ReadCallback(UART_HandleTypeDef *huart)
         break;
     }
     } //功能判断
-    HAL_UART_Receive_IT(huart, *((void **)WL_Map_Find(WL_ReadBuffers, &(huart->Instance))), WL_UART_BufferSize);
+    WL_UART_LLPRead(llp, *((void **)WL_Map_Find(WL_ReadBuffers, &(llp->handle->Instance))), WL_UART_BufferSize, _WL_UART_ReadCallback);
 }
 
 WL_UART_State *WL_UART_Create(UART_HandleTypeDef *uHandleType, WL_UINT32 id, WL_UINT32 peerID, WL_UART_HookFunction readFunc, WL_UART_HookFunction readErrorFunc)
@@ -189,7 +187,7 @@ WL_UART_State *WL_UART_Create(UART_HandleTypeDef *uHandleType, WL_UINT32 id, WL_
     } // id防重
 
     WL_UART_State *state = pvPortMalloc(sizeof(WL_UART_State)); //分配内存
-    state->handle = uHandleType;
+    state->llp = WL_UART_LLPCreate(uHandleType);
     state->sendState = WL_UART_SendStateEmpty;
     state->timeout = WL_UART_DEFAULTTIMEOUT;
     state->id = id;
@@ -202,20 +200,20 @@ WL_UART_State *WL_UART_Create(UART_HandleTypeDef *uHandleType, WL_UINT32 id, WL_
 
     state->timer = xTimerCreate("", state->timeout, pdTRUE, (void *)id, __WL_UART_Timeout);
 
-    if (WL_Map_Find(WL_ReadBuffers, &(state->handle->Instance)) == WL_NULL)
+    if (WL_Map_Find(WL_ReadBuffers, &(state->llp->handle->Instance)) == WL_NULL)
     {
         void *buffer = pvPortMalloc(WL_UART_BufferSize);
-        WL_Map_Insert(WL_ReadBuffers, &(state->handle->Instance), &buffer);
+        WL_Map_Insert(WL_ReadBuffers, &(state->llp->handle->Instance), &buffer);
     }
-    if (WL_Map_Find(WL_WriteBuffers, &(state->handle->Instance)) == WL_NULL)
+    if (WL_Map_Find(WL_WriteBuffers, &(state->llp->handle->Instance)) == WL_NULL)
     {
         void *buffer = pvPortMalloc(WL_UART_BufferSize);
-        WL_Map_Insert(WL_WriteBuffers, &(state->handle->Instance), &buffer);
+        WL_Map_Insert(WL_WriteBuffers, &(state->llp->handle->Instance), &buffer);
     } //若无串口缓存，则建立
 
     WL_Map_Insert(WL_StateList, &(state->id), &state); // state存入map
 
-    HAL_UART_Receive_IT(state->handle, *((void **)WL_Map_Find(WL_ReadBuffers, &(state->handle->Instance))), WL_UART_BufferSize); //等待连接
+    WL_UART_LLPRead(state->llp, *((void **)WL_Map_Find(WL_ReadBuffers, &(state->llp->handle->Instance))), WL_UART_BufferSize, _WL_UART_ReadCallback); //等待连接
 
     return state;
 }
@@ -234,19 +232,19 @@ void WL_UART_Destory(WL_UART_State *state)
 
     WL_Map_Erase(WL_StateList, &(state->id)); //从map中移除
 
-    USART_TypeDef *readPort = state->handle->Instance;
-    USART_TypeDef *writePort = state->handle->Instance; //获取串口地址
+    USART_TypeDef *readPort = state->llp->handle->Instance;
+    USART_TypeDef *writePort = state->llp->handle->Instance; //获取串口地址
 
     WL_BOOLEAN haveRead = WL_FALSE;
     WL_BOOLEAN haveWrite = WL_FALSE;
     for (WL_UINT32 i = 0; i < WL_StateList->size; i++)
     {
         WL_UART_State *current = (void *)((WL_SIZE_T)WL_StateList->values + (i * (WL_StateList->valueSize)));
-        if (current->handle->Instance == readPort)
+        if (current->llp->handle->Instance == readPort)
         {
             haveRead = WL_TRUE;
         }
-        if (current->handle->Instance == writePort)
+        if (current->llp->handle->Instance == writePort)
         {
             haveWrite = WL_TRUE;
         }
@@ -286,7 +284,7 @@ WL_BOOLEAN WL_UART_Connect(WL_UART_State *state)
         return WL_FALSE;
     }
 
-    void **buffer = WL_Map_Find(WL_WriteBuffers, &(state->handle->Instance)); //获取写缓冲区
+    void **buffer = WL_Map_Find(WL_WriteBuffers, &(state->llp->handle->Instance)); //获取写缓冲区
     if (buffer == WL_NULL)
     {
         return WL_FALSE;
@@ -300,23 +298,19 @@ WL_BOOLEAN WL_UART_Connect(WL_UART_State *state)
 
     state->sendState = WL_UART_SendStateConnected0;
 
-    if (HAL_UART_Transmit_IT(state->handle, (*buffer), WL_UART_BufferSize) != HAL_OK)
-    {
-        state->sendState = WL_UART_SendStateEmpty;
-        return WL_FALSE;
-    } //发送
+    WL_UART_LLPWrite(state->llp, (*buffer), WL_UART_BufferSize); //发送
 
     xTimerStartFromISR(state->timer, 0);
 
-    while (state->sendState == WL_UART_SendStateConnected0)
-    {
-    }; //等待
+    //while (state->sendState == WL_UART_SendStateConnected0)
+    //{
+    //}; //等待
 
     if (state->sendState == WL_UART_SendStateConnected2)
     {
         return WL_TRUE;
     }
-    state->sendState = WL_UART_SendStateEmpty;
+    //state->sendState = WL_UART_SendStateEmpty;
     return WL_FALSE;
 }
 

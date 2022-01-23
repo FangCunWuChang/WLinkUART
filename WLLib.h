@@ -1,3 +1,4 @@
+#pragma once
 /*
  * WLink状态处理
  * (C)2022 WuChang & RM Team WDR.All Rights Reserved.
@@ -25,5 +26,3 @@ WL_BOOLEAN WL_UART_Connect(WL_UART_State *);
 WL_BOOLEAN WL_UART_SetTimeOut(WL_UART_State *, WL_TIMETICK);
 
 WL_BOOLEAN WL_UART_Write(WL_UART_State *, void *, WL_SIZE_T, WL_UART_HookFunction, WL_UART_HookFunction);
-
-void _WL_UART_ReadCallback(UART_HandleTypeDef *);

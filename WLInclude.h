@@ -1,3 +1,4 @@
+#pragma once
 /*
  * WLink平台包含
  * (C)2022 WuChang & RM Team WDR.All Rights Reserved.

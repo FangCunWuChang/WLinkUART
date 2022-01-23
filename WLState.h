@@ -1,3 +1,4 @@
+#pragma once
 /*
  * WLink状态
  * (C)2022 WuChang & RM Team WDR.All Rights Reserved.
@@ -5,6 +6,7 @@
 
 #include "WLInclude.h"
 #include "WLBase.h"
+#include "WLLLP.h"
 
 typedef enum
 {
@@ -20,7 +22,7 @@ typedef void (*WL_UART_HookFunction)(void *);
 typedef struct
 {
     WL_UINT32 id;                         //索引
-    UART_HandleTypeDef *handle;           //串口句柄
+    WL_UART_LLP *llp;                     //底层串口
     WL_TIMETICK timeout;                  //传输超时
     WL_UART_SendState sendState;          //发送状态
     WL_BOOLEAN isReading;                 //正在接收
